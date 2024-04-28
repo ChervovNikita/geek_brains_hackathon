@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  postgres-cognitutor:
+    image: postgres:16.2
+    container_name: postgres
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - postgres-cognitutor-volume:/var/lib/postgresql/data
+      - ./src/database/initdb.d:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+
+  redis-cognitutor:
+    image: "redis:alpine"
+    container_name: redis
+    restart: unless-stopped
+    command: redis-server --save 60 1
+    environment:
+      - REDIS_REPLICATION_MODE=master
+    volumes:
+      - redis-cognitutor-volume:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+    ports:
+      - "6379:6379"
+
+  bot-cognitutor:
+    build: .
+    container_name: bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./config.toml:/app/config.toml
+    depends_on:
+      - postgres-cognitutor
+      - redis-cognitutor
+
+volumes:
+  redis-cognitutor-volume: {}
+  postgres-cognitutor-volume: {}
+
